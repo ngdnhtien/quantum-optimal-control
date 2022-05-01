@@ -1,0 +1,114 @@
+\documentclass{beamer}
+% \usepackage[utf8]{english}
+\usepackage{physics}
+\usepackage{amsthm}
+\usepackage{braket}
+\newtheorem{remark}{Remark}
+\newcommand{\dcp}{\delta_{CP}}
+\renewcommand\bra[1]{{\langle{#1}|}}
+\makeatletter
+\renewcommand\ket[1]{%
+  \@ifnextchar\bra{\k@t{#1}\!}{\k@t{#1}}%
+}
+\newcommand\k@t[1]{{|{#1}\rangle}}
+\DeclareMathAlphabet\mathbfcal{OMS}{cmsy}{b}{n}
+\makeatother
+\usetheme{Pittsburgh}
+\usecolortheme{default}
+\AtBeginSection[]
+{
+  \begin{frame}
+    \frametitle{Table of Contents}
+    \tableofcontents[currentsection]
+  \end{frame}
+}
+
+%Information to be included in the title page:
+\title[QCVN] %optional
+{Leakage reduction in fast superconduting qubit gates via optimal control: Overview}
+
+\author[] % (optional, for multiple authors)
+{D. Tien}
+
+\institute[] % (optional)
+{
+VNU University of Science
+}
+
+\date{}
+
+
+\begin{document}
+
+\frame{\titlepage}
+\tableofcontents
+\section{Introduction}
+\begin{frame}
+    \frametitle{Introduction}
+    DOI: \href{https://doi.org/10.1038/s41534-020-00346-2}{https://doi.org/10.1038/s41534-020-00346-2}
+    \begin{itemize}
+      \item Open-loop optimal control theory (gradient/newton-descent) offers means for states and gates realization with high fidelity. 
+      \item However, this method produces less accurate results in comparision to ion traps and NMR systems.
+      \item As a results, pulse shaping for supercond. qubits requires closed-loop optimal control (finite, continuous space), i.e., direct optimization of the experimental system.
+    \end{itemize}
+\end{frame}
+\section{Setup and system control}
+\begin{frame}
+  \frametitle{Backend comparison}
+  Experiments are carried out on a transmon-type fixed-frequency superconducting qubit. Some numbers:
+  \begin{itemize}
+    \item transition frequency $\omega_{01}/2\pi=5.11722$ GHz;
+    \item anharmonicity $\Delta/2pi=-315.28$ MHz;
+    \item $T_1=105\mu$s and $T_2=39\mu$s. 
+  \end{itemize}
+  Better than armonk ($\sim$us). Not as good as jakarta.
+\end{frame}
+\begin{frame}
+  \frametitle{Realization of $X$ and $Y$ pulses}
+  Drive IF signal consists of two control components,
+  \begin{align} 
+    \Omega = \Omega(t)\exp\{i(\omega_{ssb}t+\phi)\},
+  \end{align}
+  which is up-converted to the qubit frequency $\omega_{ij}$ and synthesized by AWG. Thus real-time control over phase, frequency, and amplitude. In a frame rotating at the qubit frequency, the transmon Hamiltonian is given by 
+  \begin{align} 
+    \dfrac{\hat{H}^R}{\hbar} = \Delta\ket{2}\bra{2}+\dfrac{\tilde{\Omega}_x (t)}{2}\sum_{j=1}^2\hat{\sigma}^{x}_{j,j-1}+\dfrac{\tilde{\Omega}_y (t)}{2}\sum_{j=1}^2\hat{\sigma}^{y}_{j,j-1},
+  \end{align}
+  where $\Omega_{x,y}$ are the drive's IQ-components. Choosing appropriate $\phi$ and $\theta$ results in realization of arbitrary $X$ and $Y$ pulses.
+\end{frame}
+\begin{frame}
+  \frametitle{DRAG first-order correction}
+  Since transmons have low anharmonicity, DRAG is employed to suppress leakage out of the computation subspace. To the first-order correction, a Gaussian shaped pulse $\Omega_x(t)=A\exp\{-t^2/(2\sigma^2)\}$ with amplitude $A$ and width $\sigma$, is corrected by
+  \begin{align}
+    \Omega_{DRAG}(t)=\Omega_x(t)+i\dfrac{\beta}{\Delta}\dfrac{d\Omega_x(t)}{dt},
+  \end{align}
+  where the imaginary component eliminates the spectral weight of the pulse at $\ket{1}\leftrightarrow\ket{2}$ transition.
+\end{frame}
+\begin{frame}
+  \frametitle{DRAG second-order correction}
+  DRAG pulses fail to produce high fidelity state transition when gate duration is lower than ~ 10/$\Delta$\footnote{$\Delta/2\pi=-315.28$ MHz}. To overcome this, higher-order correction terms $\delta_n=a_n+ib_n$ have to be added. This results in a list of piecewise-constant control amplitudes
+  \begin{align} 
+    \Omega_n = \Omega_{DRAG}(n\Delta t)+\delta_n.
+  \end{align}
+  The time discretization $\Delta t$ is naturally given by the sampling rate of the AWG generating the pulse envelope. Optimization parameters are amplitude corrections $a_n$ and $b_n$ to the $n$-th sample of $\Omega_{x,y}$. 
+\end{frame}
+\section{Parameter optimization \& Results}
+\begin{frame}
+  \frametitle{Pulse parameter optimization}
+  \begin{itemize}
+    \item Pulse parameters are optimized using the covariance matrix adaptation-evolution strategy (CMA-ES) algorithm. Briefly, $\mathcal{S}^k$ ($\lambda$ sets) are generated, with $k=1,\dots,\lambda$ each characterized by the parametrization of the pulse shape. Each's shape-candidate is evaluated by a cost function, which generates a new set of candidate shapes. 
+    \item Randomized benchmarking as cost function ($m$ Clifford gates, $K$ sequences). Clifford gates are constructed by composing $\pm X/2$ and $\pm Y/2$ pulses (!?) based on $\mathcal{S}^k$. 
+  \end{itemize}
+\end{frame}
+\begin{frame}
+  \frametitle{Fidelity estimates of optimized short pulses}
+  \begin{enumerate}
+    \item First round using CMA-ES to calibrate DRAG pulses, $\mathcal{S}=\{A, \beta, \omega_{ssb}\}$.
+    \item Next round extending $\mathcal{S}$ to include higher correction orders, namely $a_j$ and $b_j$.
+  \end{enumerate} 
+  \begin{figure}
+    \centering
+    \includegraphics[scale=0.18]{sc.png}
+    \caption{Optimized DRAG pulse.}
+  \end{figure}
+\end{frame}
+\end{document}
